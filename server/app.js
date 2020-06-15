@@ -1,13 +1,16 @@
+const mongoose = require('mongoose');
+require('./models/userModel');
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
 const app = express();
+const config = require('../config/serverConfig');
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '..', 'build')));
 
-app.use('/api', require(routes));
+app.use('/api', routes);
 app.use('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
 });
@@ -22,6 +25,10 @@ app.use((err, req, res, next) => {
   res.render('error', { message: err.message });
 });
 
-const server = app.listen(process.env.PORT || 3000, function () {
-  console.log(`Сервер запущен на порту ${server.address().port}...`);
-});
+mongoose
+  .connect(config.dbUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    const server = app.listen(process.env.PORT || config.port, function () {
+      console.log(`Сервер запущен на порту ${server.address().port}...`);
+    });
+  });

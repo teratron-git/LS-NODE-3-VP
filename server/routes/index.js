@@ -1,12 +1,10 @@
+const mongoose = require('mongoose');
 const express = require('express');
+const userCtrl = require('../controllers/userCtrl');
 const router = express.Router();
 
-router.post('/registration', (req, res) => {
-  res.send('api/registration');
-});
+router.post('/registration', userCtrl.registration);
 
-router.post('/login', (req, res) => {
-  res.send('api/login');
-});
+router.post('/login', userCtrl.logIn);
 
 module.exports = router;
