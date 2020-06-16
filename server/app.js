@@ -26,7 +26,11 @@ app.use((err, req, res, next) => {
 });
 
 mongoose
-  .connect(config.dbUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(config.dbUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+  })
   .then(() => {
     const server = app.listen(process.env.PORT || config.port, function () {
       console.log(`Сервер запущен на порту ${server.address().port}...`);
