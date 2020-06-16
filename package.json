@@ -16,6 +16,7 @@
     "lodash": "^4.17.15",
     "lodash.get": "^4.4.2",
     "mongoose": "^5.9.19",
+    "git ": "^2.0.3",
     "react": "^16.9.0",
     "react-aspect-ratio": "^1.0.40",
     "react-dom": "^16.9.0",
