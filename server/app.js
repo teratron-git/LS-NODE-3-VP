@@ -30,6 +30,7 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
+    useFindAndModify: false,
   })
   .then(() => {
     const server = app.listen(process.env.PORT || config.port, function () {
