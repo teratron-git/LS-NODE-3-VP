@@ -1,24 +1,43 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('../../config/serverConfig');
+const { secret } = require('../../config/serverConfig').jwt;
+const authHelper = require('../utils/authHelper');
+const serialize = require('../utils/serialize');
+const model = require('../models/userModel');
 
 const User = mongoose.model('User');
 
-module.exports.registration = (req, res) => {
-  console.log('Регистрация пользователя:', req.body);
-  req.body.password = bcrypt.hashSync(req.body.password, 10);
+module.exports.registration = async (req, res) => {
+  const otherData = {
+    image:
+      'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
+    permission: {
+      chat: { C: true, R: true, U: true, D: true },
+      news: { C: true, R: true, U: true, D: true },
+      settings: { C: true, R: true, U: true, D: true },
+    },
+  };
 
-  User.create(req.body)
-    .then((newUser) => res.json(newUser))
-    .catch((err) => res.status(500).json(err));
+  req.body.password = bcrypt.hashSync(req.body.password, 10);
+  const userForSave = { ...req.body, ...otherData };
+  const newUser = await User.create(userForSave);
+  const tokens = await authHelper.createTokens(userForSave.username);
+  const userToFrontend = await User.findOneAndUpdate(
+    { username: userForSave.username },
+    { ...tokens },
+    { new: true }
+  );
+  console.log('Зарегистрирован и отправлен:', userToFrontend);
+
+  res.json(serialize.serializeAuthUser(userToFrontend));
 };
 
 module.exports.logIn = (req, res) => {
   const { username, password } = req.body;
   console.log('Вход пользователя:', req.body);
 
-  User.findOne({ username }, { __v: 0 })
+  User.findOne({ username })
     .exec()
     .then((user) => {
       if (!user) {
@@ -31,31 +50,15 @@ module.exports.logIn = (req, res) => {
 
       console.log('pass', password, user.password, isValidPass);
       if (isValidPass) {
-        const token = jwt.sign(user._id.toString(), jwtSecret);
-        const temp = {
-          firstName: 'String',
-          id: 'String',
-          image: 'String',
-          middleName: 'String',
-          permission: {
-            chat: { C: true, R: true, U: true, D: true },
-            news: { C: true, R: true, U: true, D: true },
-            settings: { C: true, R: true, U: true, D: true },
-          },
-          surName: 'String',
-          username: '3',
-          password:
-            '$2b$10$Q1116tXfw6ly8/Jc/9BWa.GSEDspQBpjxhvJHXKaGQt4g2s5NW5ju',
+        // user.accessToken = authHelper.generateAccessToken(user._id);
+        // user.refreshToken = authHelper.generateRefreshToken().token;
 
-          accessToken: token,
-          refreshToken: 'String',
-          accessTokenExpiredAt: (Math.floor(Date.now()) + 60 * 1000).toString(),
-          refreshTokenExpiredAt: (
-            Math.floor(Date.now()) +
-            60 * 2 * 1000
-          ).toString(),
-        };
-        res.json(temp);
+        console.log('Пароль совпадает. user:', user);
+        // updateTokens(user._id)
+        //   .then((tokens) => console.log('tokens', tokens))
+        //   .catch((err) => console.log('err', err));
+        // console.log('user', user);
+        res.json(user);
       } else {
         res.status(401).json({ message: 'Неправильный логин или пароль!' });
       }
