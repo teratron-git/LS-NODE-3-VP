@@ -3,7 +3,6 @@ const uniqueValidator = require('mongoose-unique-validator');
 
 const UserSchema = new mongoose.Schema({
   firstName: String,
-  id: String,
   image: String,
   middleName: String,
   permission: {
@@ -20,6 +19,7 @@ const UserSchema = new mongoose.Schema({
   accessTokenExpiredAt: Date,
   refreshTokenExpiredAt: Date,
 });
+
 UserSchema.plugin(uniqueValidator);
 
 mongoose.model('User', UserSchema);
