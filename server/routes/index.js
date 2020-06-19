@@ -5,16 +5,12 @@ const router = express.Router();
 
 router.post('/registration', userCtrl.registration);
 router.post('/login', userCtrl.logIn);
+// router.get('/profile', userCtrl.getProfile);
 
 //TODO
 router.post('/refresh-token', (req, res) => {
   console.log('POST /api/refresh-token');
   res.send('POST /api/refresh-token');
-});
-
-router.get('/profile', (req, res) => {
-  console.log('GET /api/profile');
-  res.send('GET /api/profile');
 });
 
 router.patch('/profile', (req, res) => {

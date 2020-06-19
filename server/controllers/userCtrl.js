@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { secret } = require('../../config/serverConfig').jwt;
 const authHelper = require('../utils/authHelper');
 const serialize = require('../utils/serialize');
-const model = require('../models/userModel');
+const userModel = require('../models/userModel');
 
 const User = mongoose.model('User');
 
@@ -33,35 +33,49 @@ module.exports.registration = async (req, res) => {
   res.json(serialize.serializeAuthUser(userToFrontend));
 };
 
-module.exports.logIn = (req, res) => {
+module.exports.logIn = async (req, res) => {
   const { username, password } = req.body;
   console.log('Вход пользователя:', req.body);
+  try {
+    const foundedUser = await User.findOne({ username }).exec();
+    console.log('module.exports.logIn -> foundedUser', foundedUser);
+    if (!foundedUser) {
+      res
+        .status(401)
+        .json({ message: `Пользователь ${username} не зарегистрирован!` });
+    }
 
-  User.findOne({ username })
-    .exec()
-    .then((user) => {
-      if (!user) {
-        res
-          .status(401)
-          .json({ message: `Пользователь ${username} не зарегистрирован!` });
-      }
+    const isValidPass = bcrypt.compareSync(password, foundedUser.password);
 
-      const isValidPass = bcrypt.compareSync(password, user.password);
-
-      console.log('pass', password, user.password, isValidPass);
-      if (isValidPass) {
-        // user.accessToken = authHelper.generateAccessToken(user._id);
-        // user.refreshToken = authHelper.generateRefreshToken().token;
-
-        console.log('Пароль совпадает. user:', user);
-        // updateTokens(user._id)
-        //   .then((tokens) => console.log('tokens', tokens))
-        //   .catch((err) => console.log('err', err));
-        // console.log('user', user);
-        res.json(user);
-      } else {
-        res.status(401).json({ message: 'Неправильный логин или пароль!' });
-      }
-    })
-    .catch((err) => res.status(500).json({ message: err.message }));
+    console.log('pass', password, foundedUser.password, isValidPass);
+    if (isValidPass) {
+      const tokens = await authHelper.createTokens(foundedUser.username);
+      const userToFrontend = await User.findOneAndUpdate(
+        { username: foundedUser.username },
+        { ...tokens },
+        { new: true }
+      );
+      res.json(serialize.serializeAuthUser(foundedUser));
+    } else {
+      res.status(401).json({ message: 'Неправильный логин или пароль!' });
+    }
+  } catch (err) {
+    console.log('err', err);
+  }
 };
+
+// module.exports.getProfile = async (req, res) => {
+//   try {
+//     const foundedUser = await User.findOne({ username }).exec();
+//     console.log('module.exports.logIn -> foundedUser', foundedUser);
+//     if (!foundedUser) {
+//       res
+//         .status(401)
+//         .json({ message: `Пользователь ${username} не зарегистрирован!` });
+//     }
+
+//     res.json(serialize.serializeUser(foundedUser));
+//   } catch (err) {
+//     console.log('err', err);
+//   }
+// };
