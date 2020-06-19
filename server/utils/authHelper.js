@@ -7,12 +7,7 @@ const model = require('../models/userModel');
 const User = mongoose.model('User');
 
 module.exports.createTokens = async (username) => {
-  console.log('module.exports.createTokens -> username', username);
-
   const user = await User.findOne({ username }).exec();
-
-  console.log('Генерируем токены...', user._id);
-
   const aToken = await jwt.sign({ payload: user._id.toString() }, secret, {
     expiresIn: tokens.access.expiresIn,
   });
@@ -23,17 +18,17 @@ module.exports.createTokens = async (username) => {
   const verifyA = jwt.verify(aToken, secret);
   const verifyR = jwt.verify(rToken, secret);
 
-  console.log('module.exports.createTokens -> verifyA', verifyA);
-  console.log('module.exports.createTokens -> verifyR', verifyR);
-  console.log('module.exports.createTokens -> aToken', aToken);
-  console.log('module.exports.createTokens -> rToken', rToken);
+  // console.log('module.exports.createTokens -> verifyA', verifyA);
+  // console.log('module.exports.createTokens -> verifyR', verifyR);
+  // console.log('module.exports.createTokens -> aToken', aToken);
+  // console.log('module.exports.createTokens -> rToken', rToken);
 
-  return Promise.resolve({
+  return {
     accessToken: aToken,
     refreshToken: rToken,
     accessTokenExpiredAt: verifyA.exp * 1000,
     refreshTokenExpiredAt: verifyR.exp * 1000,
-  });
+  };
 };
 // module.exports.generateAccessToken = (userId) => {
 //   console.log('Внутри');

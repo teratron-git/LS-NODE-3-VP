@@ -16,8 +16,8 @@ const UserSchema = new mongoose.Schema({
 
   accessToken: String,
   refreshToken: String,
-  accessTokenExpiredAt: Date,
-  refreshTokenExpiredAt: Date,
+  accessTokenExpiredAt: String,
+  refreshTokenExpiredAt: String,
 });
 
 UserSchema.plugin(uniqueValidator);
