@@ -34,7 +34,7 @@ Thumbs.db
 bower_components
 dist
 build
-config/serverConfig.js
+#config/serverConfig.js
 
 # Node.JS
 node_modules
