@@ -72,7 +72,7 @@ module.exports.refreshTokens = async (req, res) => {
     const foundedUser = await User.findOne({ refreshToken }).exec();
 
     if (!foundedUser) {
-      res.status(401).json({ message: `Пользователь не зарегистрирован!` });
+      res.status(401).json({ message: `Неправильный refresh токен!` });
     }
 
     const tokens = await authHelper.createTokens(foundedUser.username);
@@ -89,18 +89,17 @@ module.exports.refreshTokens = async (req, res) => {
   }
 };
 
-// module.exports.getProfile = async (req, res) => {
-//   try {
-//     const foundedUser = await User.findOne({ username }).exec();
-//     console.log('module.exports.logIn -> foundedUser', foundedUser);
-//     if (!foundedUser) {
-//       res
-//         .status(401)
-//         .json({ message: `Пользователь ${username} не зарегистрирован!` });
-//     }
+module.exports.getProfile = async (req, res) => {
+  const accessToken = req.headers['authorization'];
+  try {
+    const foundedUser = await User.findOne({ accessToken }).exec();
+    console.log('module.exports.logIn -> foundedUser', foundedUser);
+    if (!foundedUser) {
+      res.status(401).json({ message: `Неправильный access токен!` });
+    }
 
-//     res.json(serialize.serializeUser(foundedUser));
-//   } catch (err) {
-//     console.log('err', err);
-//   }
-// };
+    res.json(serialize.serializeUser(foundedUser));
+  } catch (err) {
+    console.log('err', err);
+  }
+};

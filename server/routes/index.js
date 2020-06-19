@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/registration', userCtrl.registration);
 router.post('/login', userCtrl.logIn);
-// router.get('/profile', userCtrl.getProfile);
+router.get('/profile', userCtrl.getProfile);
 router.post('/refresh-token', userCtrl.refreshTokens);
 
 //TODO
