@@ -6,12 +6,9 @@ const router = express.Router();
 router.post('/registration', userCtrl.registration);
 router.post('/login', userCtrl.logIn);
 // router.get('/profile', userCtrl.getProfile);
+router.post('/refresh-token', userCtrl.refreshTokens);
 
 //TODO
-router.post('/refresh-token', (req, res) => {
-  console.log('POST /api/refresh-token');
-  res.send('POST /api/refresh-token');
-});
 
 router.patch('/profile', (req, res) => {
   console.log('PATCH /api/profile');

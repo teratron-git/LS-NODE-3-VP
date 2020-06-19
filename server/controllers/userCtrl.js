@@ -55,10 +55,35 @@ module.exports.logIn = async (req, res) => {
         { ...tokens },
         { new: true }
       );
-      res.json(serialize.serializeAuthUser(foundedUser));
+      res.json(serialize.serializeAuthUser(userToFrontend));
     } else {
       res.status(401).json({ message: 'Неправильный логин или пароль!' });
     }
+  } catch (err) {
+    console.log('err', err);
+  }
+};
+
+module.exports.refreshTokens = async (req, res) => {
+  const refreshToken = req.headers['authorization'];
+  console.log('\n !!!Это рефреш от фронта:', refreshToken);
+
+  try {
+    const foundedUser = await User.findOne({ refreshToken }).exec();
+
+    if (!foundedUser) {
+      res.status(401).json({ message: `Пользователь не зарегистрирован!` });
+    }
+
+    const tokens = await authHelper.createTokens(foundedUser.username);
+    const userToFrontend = await User.findOneAndUpdate(
+      { username: foundedUser.username },
+      { ...tokens },
+      { new: true }
+    );
+    refreshToken;
+    res.setHeader('authorization', tokens.refreshToken);
+    res.json(serialize.serializeAuthUser(tokens));
   } catch (err) {
     console.log('err', err);
   }
