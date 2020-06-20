@@ -6,12 +6,12 @@ const model = require('../models/userModel');
 
 const User = mongoose.model('User');
 
-module.exports.createTokens = async (username) => {
-  const user = await User.findOne({ username }).exec();
-  const aToken = await jwt.sign({ payload: user._id.toString() }, secret, {
+module.exports.createTokens = async (_id) => {
+  // const user = await User.findOne({ username });
+  const aToken = await jwt.sign({ payload: _id.toString() }, secret, {
     expiresIn: tokens.access.expiresIn,
   });
-  const rToken = await jwt.sign({ payload: user._id.toString() }, secret, {
+  const rToken = await jwt.sign({ payload: _id.toString() }, secret, {
     expiresIn: tokens.refresh.expiresIn,
   });
 
@@ -30,37 +30,3 @@ module.exports.createTokens = async (username) => {
     refreshTokenExpiredAt: verifyR.exp * 1000,
   };
 };
-// module.exports.generateAccessToken = (userId) => {
-//   console.log('Внутри');
-//   const payload = {
-//     userId,
-//     type: tokens.access.type,
-//   };
-//   const options = { expiresIn: tokens.access.expiresIn };
-//   console.log(jwt.sign(payload, secret, options));
-//   return jwt.sign(payload, secret, options);
-// };
-
-// module.exports.generateRefreshToken = () => {
-//   console.log('Внутри ref');
-//   const payload = {
-//     id: uuid(),
-//     type: tokens.refresh.type,
-//   };
-//   const options = { expiresIn: tokens.refresh.expiresIn };
-//   console.log(jwt.sign(payload, secret, options));
-//   return {
-//     id: payload.id,
-//     token: jwt.sign(payload, secret, options),
-//   };
-// };
-
-// module.exports.replaceDbRefreshToken = (tokenId, userId) => {
-//   console.log('Внутри replace');
-//   Token.findOneAndRemove({ userId })
-//     .exec()
-//     .then(() => {
-//       Token.create({ tokenId, userId });
-//       console.log('!!!', tokenId, userId);
-//     });
-// };

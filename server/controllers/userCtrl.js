@@ -9,97 +9,125 @@ const userModel = require('../models/userModel');
 const User = mongoose.model('User');
 
 module.exports.registration = async (req, res) => {
-  const otherData = {
-    image:
-      'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
-    permission: {
-      chat: { C: true, R: true, U: true, D: true },
-      news: { C: true, R: true, U: true, D: true },
-      settings: { C: true, R: true, U: true, D: true },
-    },
-  };
+  try {
+    const { username } = req.body;
+    const foundedUser = await User.findOne({ username });
+    if (foundedUser) {
+      throw new Error(`Пользователь ${username} уже зарегистрирован!`);
+    }
 
-  req.body.password = bcrypt.hashSync(req.body.password, 10);
-  const userForSave = { ...req.body, ...otherData };
-  const newUser = await User.create(userForSave);
-  const tokens = await authHelper.createTokens(userForSave.username);
-  const userToFrontend = await User.findOneAndUpdate(
-    { username: userForSave.username },
-    { ...tokens },
-    { new: true }
-  );
-  console.log('Зарегистрирован и отправлен:', userToFrontend);
+    const otherData = {
+      _id: mongoose.Types.ObjectId(),
+      image:
+        'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
+      permission: {
+        chat: { C: true, R: true, U: true, D: true },
+        news: { C: true, R: true, U: true, D: true },
+        settings: { C: true, R: true, U: true, D: true },
+      },
+    };
 
-  res.json(serialize.serializeAuthUser(userToFrontend));
+    const hash = bcrypt.hashSync(req.body.password, 10);
+    const tokens = await authHelper.createTokens(otherData._id);
+    const preparedForCreate = {
+      ...req.body,
+      ...otherData,
+      password: hash,
+      refreshToken: tokens.refreshToken,
+      refreshTokenExpiredAt: tokens.refreshTokenExpiredAt,
+    };
+
+    const createdUser = await User.create(preparedForCreate);
+
+    res.json({
+      ...serialize.serializeAuthUser(createdUser),
+      accessToken: tokens.accessToken,
+      accessTokenExpiredAt: tokens.accessTokenExpiredAt,
+    });
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
 };
 
 module.exports.logIn = async (req, res) => {
-  const { username, password } = req.body;
-  console.log('Вход пользователя:', req.body);
   try {
-    const foundedUser = await User.findOne({ username }).exec();
+    const { username, password } = req.body;
+    const foundedUser = await User.findOne({ username });
     console.log('module.exports.logIn -> foundedUser', foundedUser);
     if (!foundedUser) {
-      res
-        .status(401)
-        .json({ message: `Пользователь ${username} не зарегистрирован!` });
+      throw new Error(`Пользователь ${username} не зарегистрирован!`);
     }
 
     const isValidPass = bcrypt.compareSync(password, foundedUser.password);
 
-    console.log('pass', password, foundedUser.password, isValidPass);
     if (isValidPass) {
-      const tokens = await authHelper.createTokens(foundedUser.username);
-      const userToFrontend = await User.findOneAndUpdate(
-        { username: foundedUser.username },
-        { ...tokens },
+      const tokens = await authHelper.createTokens(foundedUser._id);
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: foundedUser._id },
+        {
+          refreshToken: tokens.refreshToken,
+          refreshTokenExpiredAt: tokens.refreshTokenExpiredAt,
+        },
         { new: true }
       );
-      res.json(serialize.serializeAuthUser(userToFrontend));
+      res.json({
+        ...serialize.serializeAuthUser(updatedUser),
+        accessToken: tokens.accessToken,
+        accessTokenExpiredAt: tokens.accessTokenExpiredAt,
+      });
+      console.log(
+        'module.exports.logIn -> tokens.accessToken',
+        tokens.accessToken
+      );
     } else {
-      res.status(401).json({ message: 'Неправильный логин или пароль!' });
+      throw new Error(`Неверные учетные данные!`);
     }
   } catch (err) {
-    console.log('err', err);
+    res.status(401).json({ message: err.message });
   }
 };
 
 module.exports.refreshTokens = async (req, res) => {
-  const refreshToken = req.headers['authorization'];
-  console.log('\n !!!Это рефреш от фронта:', refreshToken);
-
   try {
-    const foundedUser = await User.findOne({ refreshToken }).exec();
+    const refreshToken = req.headers['authorization'];
+    console.log('\n !!!Это рефреш от фронта:', refreshToken);
+
+    const foundedUser = await User.findOne({ refreshToken });
 
     if (!foundedUser) {
-      res.status(401).json({ message: `Неправильный refresh токен!` });
+      throw new Error(`Неправильный refresh токен!`);
     }
 
-    const tokens = await authHelper.createTokens(foundedUser.username);
-    const userToFrontend = await User.findOneAndUpdate(
+    const tokens = await authHelper.createTokens(foundedUser._id);
+    await User.findOneAndUpdate(
       { username: foundedUser.username },
       { ...tokens },
       { new: true }
     );
-    refreshToken;
-    res.setHeader('authorization', tokens.refreshToken);
-    res.json(serialize.serializeAuthUser(tokens));
+
+    res.setHeader('Authorization', tokens.refreshToken);
+    res.json(tokens);
   } catch (err) {
-    console.log('err', err);
+    res.status(401).json({ message: err.message });
   }
 };
 
 module.exports.getProfile = async (req, res) => {
-  const accessToken = req.headers['authorization'];
   try {
-    const foundedUser = await User.findOne({ accessToken }).exec();
-    console.log('module.exports.logIn -> foundedUser', foundedUser);
-    if (!foundedUser) {
-      res.status(401).json({ message: `Неправильный access токен!` });
-    }
+    const accessToken = req.headers['authorization'];
+    console.log('module.exports.getProfile -> accessToken', accessToken);
+    const result = await jwt.verify(accessToken, secret);
+    console.log('module.exports.getProfile -> result', result);
+    if (result) {
+      const foundedUser = await User.findOne({ _id: result.payload });
+      console.log('module.exports.getProfile -> foundedUser', foundedUser);
+      if (!foundedUser) {
+        throw new Error(`Неправильный access токен!`);
+      }
 
-    res.json(serialize.serializeUser(foundedUser));
+      res.json(serialize.serializeUser(foundedUser));
+    }
   } catch (err) {
-    console.log('err', err);
+    res.status(401).json({ message: err.message });
   }
 };
