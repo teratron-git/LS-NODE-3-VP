@@ -19,9 +19,7 @@ module.exports.serializeAuthUser = (user) => {
     permission: user.permission,
     surName: user.surName,
     username: user.username,
-    accessToken: user.accessToken,
     refreshToken: user.refreshToken,
-    accessTokenExpiredAt: user.accessTokenExpiredAt,
     refreshTokenExpiredAt: user.refreshTokenExpiredAt,
   };
 };
