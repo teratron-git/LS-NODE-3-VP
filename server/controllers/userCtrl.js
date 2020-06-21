@@ -208,3 +208,24 @@ module.exports.getAllUsers = async (req, res) => {
     res.status(401).json({ message: err.message });
   }
 };
+
+module.exports.changeUserPermission = async (req, res) => {
+  console.log('module.exports.changeUserPermission -> req', req.params.id);
+  try {
+    const accessToken = req.headers['authorization'];
+    const result = await jwt.verify(accessToken, secret);
+
+    const foundedUser = await User.findOneAndUpdate(
+      { _id: req.params.id },
+      { ...req.body },
+      { new: true }
+    );
+    if (!foundedUser) {
+      throw new Error(`Пользователь ${username} не зарегистрирован!`);
+    }
+
+    res.json(foundedUser.permission);
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+};

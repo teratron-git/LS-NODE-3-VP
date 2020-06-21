@@ -1,6 +1,6 @@
 const express = require('express');
 const userCtrl = require('../controllers/userCtrl');
-const authMdwr = require('../middleware/auth');
+// const authMdwr = require('../middleware/auth');
 const router = express.Router();
 var multer = require('multer');
 var upload = multer({ dest: 'build/uploads/' });
@@ -13,6 +13,7 @@ router.get('/profile', userCtrl.getProfile);
 router.patch('/profile', upload.single('avatar'), userCtrl.changeProfile);
 
 router.get('/users', userCtrl.getAllUsers);
+router.patch('/users/:id/permission', userCtrl.changeUserPermission);
 
 //TODO
 
@@ -39,11 +40,6 @@ router.patch('/news/:id', (req, res) => {
 router.delete('/news/:id', (req, res) => {
   console.log('DELETE /api/news/:id');
   res.send('DELETE /api/news/:id');
-});
-
-router.patch('/users/:id/permission', (req, res) => {
-  console.log('PATCH /api/users/:id/permission');
-  res.send('PATCH /api/users/:id/permission');
 });
 
 module.exports = router;
