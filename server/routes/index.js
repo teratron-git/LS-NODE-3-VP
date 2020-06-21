@@ -12,6 +12,8 @@ router.post('/refresh-token', userCtrl.refreshTokens);
 router.get('/profile', userCtrl.getProfile);
 router.patch('/profile', upload.single('avatar'), userCtrl.changeProfile);
 
+router.get('/users', userCtrl.getAllUsers);
+
 //TODO
 
 router.delete('/users/:id', (req, res) => {
@@ -37,11 +39,6 @@ router.patch('/news/:id', (req, res) => {
 router.delete('/news/:id', (req, res) => {
   console.log('DELETE /api/news/:id');
   res.send('DELETE /api/news/:id');
-});
-
-router.get('/users', (req, res) => {
-  console.log('GET /api/users');
-  res.send('GET /api/users');
 });
 
 router.patch('/users/:id/permission', (req, res) => {

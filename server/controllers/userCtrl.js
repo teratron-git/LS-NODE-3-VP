@@ -117,9 +117,7 @@ module.exports.refreshTokens = async (req, res) => {
 module.exports.getProfile = async (req, res) => {
   try {
     const accessToken = req.headers['authorization'];
-    console.log('module.exports.getProfile -> accessToken', accessToken);
     const result = await jwt.verify(accessToken, secret);
-    console.log('module.exports.getProfile -> result', result);
     if (result) {
       const foundedUser = await User.findOne({ _id: result.payload });
       console.log('module.exports.getProfile -> foundedUser', foundedUser);
@@ -184,6 +182,29 @@ module.exports.changeProfile = async (req, res) => {
       );
     }
 
+    res.status(401).json({ message: err.message });
+  }
+};
+
+module.exports.getAllUsers = async (req, res) => {
+  try {
+    const accessToken = req.headers['authorization'];
+    const result = await jwt.verify(accessToken, secret);
+
+    if (result) {
+      const foundedUsers = await User.find();
+      if (!foundedUsers) {
+        throw new Error(`Неправильный access токен!`);
+      }
+
+      const preparedUsers = [];
+      foundedUsers.map((user) =>
+        preparedUsers.push(serialize.serializeUser(user))
+      );
+
+      res.json(preparedUsers);
+    }
+  } catch (err) {
     res.status(401).json({ message: err.message });
   }
 };
