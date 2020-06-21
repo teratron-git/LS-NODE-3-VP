@@ -1,5 +1,6 @@
 const express = require('express');
 const userCtrl = require('../controllers/userCtrl');
+const newsCtrl = require('../controllers/newsCtrl');
 // const authMdwr = require('../middleware/auth');
 const router = express.Router();
 var multer = require('multer');
@@ -16,16 +17,10 @@ router.get('/users', userCtrl.getAllUsers);
 router.patch('/users/:id/permission', userCtrl.changeUserPermission);
 router.delete('/users/:id', userCtrl.deleteUser);
 
-//TODO
-router.get('/news', (req, res) => {
-  console.log('GET /api/news');
-  res.send('GET /api/news');
-});
+router.get('/news', newsCtrl.getAllNews);
+router.post('/news', newsCtrl.createNews);
 
-router.post('/news', (req, res) => {
-  console.log('POST /api/news');
-  res.send('POST /api/news');
-});
+//TODO
 
 router.patch('/news/:id', (req, res) => {
   console.log('PATCH /api/news/:id');
