@@ -5,6 +5,8 @@ const { secret } = require('../../config/serverConfig').jwt;
 const authHelper = require('../utils/authHelper');
 const serialize = require('../utils/serialize');
 const userModel = require('../models/userModel');
+const path = require('path');
+const fs = require('fs');
 
 const User = mongoose.model('User');
 
@@ -128,6 +130,60 @@ module.exports.getProfile = async (req, res) => {
       res.json(serialize.serializeUser(foundedUser));
     }
   } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+};
+
+module.exports.changeProfile = async (req, res) => {
+  try {
+    const accessToken = req.headers['authorization'];
+    const result = await jwt.verify(accessToken, secret);
+    if (!req.body.oldPassword) {
+      throw new Error(`Пароль не может быть пустым!`);
+    }
+
+    const oldHash = bcrypt.hashSync(req.body.oldPassword, 10);
+    const newHash = bcrypt.hashSync(req.body.newPassword, 10);
+
+    const foundedUser = await User.findOne({ _id: result.payload });
+    if (!foundedUser) {
+      throw new Error(`Пользователь ${username} не зарегистрирован!`);
+    }
+
+    const isValidPass = bcrypt.compareSync(
+      req.body.oldPassword,
+      foundedUser.password
+    );
+
+    const password = newHash || oldHash;
+    const avatar = req.file
+      ? path.join('/uploads', req.file.filename)
+      : foundedUser.image;
+
+    if (isValidPass && result) {
+      const foundedUser = await User.findOneAndUpdate(
+        { _id: result.payload },
+        { ...req.body, password: password, image: avatar },
+        { new: true }
+      );
+      if (!foundedUser) {
+        throw new Error(`Неправильный access токен или пароль!`);
+      }
+
+      res.json(serialize.serializeUser(foundedUser));
+    } else {
+      throw new Error(`Старый пароль неверен!`);
+    }
+  } catch (err) {
+    if (req.file) {
+      fs.unlink(
+        path.join(__dirname, '../../build/uploads', req.file.filename),
+        (err) => {
+          console.log(err ? err : 'file deleted');
+        }
+      );
+    }
+
     res.status(401).json({ message: err.message });
   }
 };

@@ -2,18 +2,17 @@ const express = require('express');
 const userCtrl = require('../controllers/userCtrl');
 const authMdwr = require('../middleware/auth');
 const router = express.Router();
+var multer = require('multer');
+var upload = multer({ dest: 'build/uploads/' });
 
 router.post('/registration', userCtrl.registration);
 router.post('/login', userCtrl.logIn);
-router.get('/profile', userCtrl.getProfile);
 router.post('/refresh-token', userCtrl.refreshTokens);
 
-//TODO
+router.get('/profile', userCtrl.getProfile);
+router.patch('/profile', upload.single('avatar'), userCtrl.changeProfile);
 
-router.patch('/profile', (req, res) => {
-  console.log('PATCH /api/profile');
-  res.send('PATCH /api/profile');
-});
+//TODO
 
 router.delete('/users/:id', (req, res) => {
   console.log('DELETE /api/users/:id');
