@@ -229,3 +229,20 @@ module.exports.changeUserPermission = async (req, res) => {
     res.status(401).json({ message: err.message });
   }
 };
+
+module.exports.deleteUser = async (req, res) => {
+  console.log('module.exports.changeUserPermission -> req', req.params.id);
+  try {
+    const accessToken = req.headers['authorization'];
+    const result = await jwt.verify(accessToken, secret);
+
+    const foundedUser = await User.deleteOne({ _id: req.params.id });
+    if (!foundedUser) {
+      throw new Error(`Пользователь ${username} не зарегистрирован!`);
+    }
+
+    res.json({ message: `Пользователь ${foundedUser.username} удалён!` });
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+};

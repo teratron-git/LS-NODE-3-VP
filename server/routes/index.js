@@ -14,14 +14,9 @@ router.patch('/profile', upload.single('avatar'), userCtrl.changeProfile);
 
 router.get('/users', userCtrl.getAllUsers);
 router.patch('/users/:id/permission', userCtrl.changeUserPermission);
+router.delete('/users/:id', userCtrl.deleteUser);
 
 //TODO
-
-router.delete('/users/:id', (req, res) => {
-  console.log('DELETE /api/users/:id');
-  res.send('DELETE /api/users/:id');
-});
-
 router.get('/news', (req, res) => {
   console.log('GET /api/news');
   res.send('GET /api/news');
