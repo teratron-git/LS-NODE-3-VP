@@ -175,7 +175,7 @@ module.exports.changeProfile = async (req, res) => {
   } catch (err) {
     if (req.file) {
       fs.unlink(
-        path.join(__dirname, '../../build/uploads', req.file.filename),
+        path.join(__dirname, '..', '..', 'build', 'uploads', req.file.filename),
         (err) => {
           console.log(err ? err : 'file deleted');
         }
