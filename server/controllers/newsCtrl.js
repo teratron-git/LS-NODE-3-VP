@@ -101,3 +101,29 @@ module.exports.changeNews = async (req, res) => {
     res.status(401).json({ message: err.message });
   }
 };
+
+module.exports.deleteNews = async (req, res) => {
+  try {
+    const accessToken = req.headers['authorization'];
+    const result = await jwt.verify(accessToken, secret);
+
+    const foundedNews = await News.deleteOne({ _id: req.params.id });
+    if (!foundedNews) {
+      throw new Error(`Такая новость не существует!`);
+    }
+
+    const foundedAllNews = await News.find();
+    if (!foundedAllNews) {
+      throw new Error(`Новостей нет!`);
+    }
+
+    const preparedAllNews = [];
+    foundedAllNews.map((news) =>
+      preparedAllNews.push(serialize.serializeNews(news))
+    );
+
+    res.json(preparedAllNews);
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+};

@@ -20,12 +20,6 @@ router.delete('/users/:id', userCtrl.deleteUser);
 router.get('/news', newsCtrl.getAllNews);
 router.post('/news', newsCtrl.createNews);
 router.patch('/news/:id', newsCtrl.changeNews);
-
-//TODO
-
-router.delete('/news/:id', (req, res) => {
-  console.log('DELETE /api/news/:id');
-  res.send('DELETE /api/news/:id');
-});
+router.delete('/news/:id', newsCtrl.deleteNews);
 
 module.exports = router;
