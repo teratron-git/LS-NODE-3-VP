@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const http = require('http');
 // require('./models/userModel');
+const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -9,11 +10,19 @@ const app = express();
 const config = require('../config/serverConfig');
 const server = http.createServer(app);
 const io = require('socket.io').listen(server);
-const fs = require('fs');
 const chat = require('./controllers/chatCtrl');
+let dbUrl = '';
+
+if (process.env.NODE_ENV === 'production') {
+  dbUrl = process.env.DB_URL_DEV || config.dbUrlDev;
+  console.log('-= PRODUCTION MODE =-');
+} else {
+  dbUrl = process.env.DB_URL_PROD || config.dbUrlProd;
+  console.log('-= DEVELOPMENT MODE =-');
+}
 
 mongoose
-  .connect(config.dbUrl, {
+  .connect(dbUrl, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
