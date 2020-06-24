@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "author": "Sergei Tereshkov",
+  "engines": {
+    "node": "12.x"
+  },
   "dependencies": {
     "@material-ui/core": "^4.3.3",
     "@material-ui/icons": "^4.2.1",
@@ -35,6 +38,7 @@
     "socket.io-client": "^2.2.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.2",
     "cz-customizable": "^6.2.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-config-standard": "^14.1.1",
@@ -56,7 +60,8 @@
   },
   "homepage": ".",
   "scripts": {
-    "start": "nodemon server/app.js",
+    "start": "cross-env NODE_ENV=production node server/app.js",
+    "dev": "nodemon server/app.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
