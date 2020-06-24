@@ -60,8 +60,8 @@
   },
   "homepage": ".",
   "scripts": {
-    "start": "cross-env NODE_ENV=production node server/app.js",
-    "dev": "nodemon server/app.js",
+    "start": "node server/app.js",
+    "dev": "cross-env NODE_ENV=development nodemon server/app.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
