@@ -131,23 +131,28 @@ module.exports.changeProfile = async (req, res) => {
         throw new Error(`Пользователь не найден!`);
       }
 
-      if (!req.body.oldPassword) {
-        throw new Error(`Пароль не может быть пустым!`);
-      }
-
-      const oldHash = bcrypt.hashSync(req.body.oldPassword, 10);
-      const newHash = bcrypt.hashSync(req.body.newPassword, 10);
-      const isValidPass = bcrypt.compareSync(
-        req.body.oldPassword,
-        foundedUser.password
-      );
-      const password = newHash || oldHash;
-
       const avatar = req.file
         ? path.join('/uploads', req.file.filename)
         : foundedUser.image;
 
-      if (isValidPass && result) {
+      let passIsNotReceived = false;
+      let isValidPass = false;
+      let password = foundedUser.password;
+
+      if (req.body.oldPassword.length && req.body.newPassword.length) {
+        const newHash = bcrypt.hashSync(req.body.newPassword, 10);
+        isValidPass = await bcrypt.compareSync(
+          req.body.oldPassword,
+          foundedUser.password
+        );
+        password = isValidPass ? newHash : foundedUser.password;
+      } else if (!req.body.oldPassword.length && !req.body.newPassword.length) {
+        passIsNotReceived = true;
+      } else {
+        throw new Error(`Нужно заполнить поля со старым и новым паролем!`);
+      }
+
+      if (isValidPass || passIsNotReceived) {
         const foundedUser = await User.findOneAndUpdate(
           { _id: result.payload },
           { ...req.body, password: password, image: avatar },
