@@ -12,16 +12,19 @@ module.exports.getAllNews = async (req, res) => {
     const accessToken = req.headers['authorization'];
     const result = await jwt.verify(accessToken, secret);
     if (result) {
-      const foundedNews = await News.find();
-      if (!foundedNews) {
-        throw new Error(`Новости не найдены!`);
+      const foundedUser = await User.findOne({ _id: result.payload });
+      if (!foundedUser.permission.news.R) {
+        throw new Error(`Нет прав на чтение новостей!`);
       }
 
-      const preparedAllNews = [];
-      foundedNews.map((news) =>
-        preparedAllNews.push(serialize.serializeNews(news))
-      );
+      const foundedAllNews = await News.find();
+      if (!foundedAllNews) {
+        res.json([]);
+      }
 
+      const preparedAllNews = foundedAllNews.map((news) => {
+        return serialize.serializeNews(news);
+      });
       res.json(preparedAllNews);
     }
   } catch (err) {
@@ -35,8 +38,8 @@ module.exports.createNews = async (req, res) => {
     const result = await jwt.verify(accessToken, secret);
     if (result) {
       const foundedUser = await User.findOne({ _id: result.payload });
-      if (!foundedUser) {
-        throw new Error(`Пользователь не найден!`);
+      if (!foundedUser.permission.news.C) {
+        throw new Error(`Нет прав на создание новостей!`);
       }
 
       const preparedForCreate = {
@@ -54,15 +57,14 @@ module.exports.createNews = async (req, res) => {
       };
 
       const createdNews = await News.create(preparedForCreate);
-      const foundedNews = await News.find();
-      if (!foundedNews) {
-        throw new Error(`Новости не найдены!`);
+      const foundedAllNews = await News.find();
+      if (!foundedAllNews) {
+        res.json([]);
       }
 
-      const preparedAllNews = [];
-      foundedNews.map((news) =>
-        preparedAllNews.push(serialize.serializeNews(news))
-      );
+      const preparedAllNews = foundedAllNews.map((news) => {
+        return serialize.serializeNews(news);
+      });
 
       res.json(preparedAllNews);
     }
@@ -76,6 +78,11 @@ module.exports.changeNews = async (req, res) => {
     const accessToken = req.headers['authorization'];
     const result = await jwt.verify(accessToken, secret);
     if (result) {
+      const foundedUser = await User.findOne({ _id: result.payload });
+      if (!foundedUser.permission.news.U) {
+        throw new Error(`Нет прав на обновление новостей!`);
+      }
+
       const foundedNews = await News.findOneAndUpdate(
         { _id: req.params.id },
         { ...req.body },
@@ -87,13 +94,12 @@ module.exports.changeNews = async (req, res) => {
 
       const foundedAllNews = await News.find();
       if (!foundedAllNews) {
-        throw new Error(`Новости не найдены!`);
+        res.json([]);
       }
 
-      const preparedAllNews = [];
-      foundedAllNews.map((news) =>
-        preparedAllNews.push(serialize.serializeNews(news))
-      );
+      const preparedAllNews = foundedAllNews.map((news) => {
+        return serialize.serializeNews(news);
+      });
 
       res.json(preparedAllNews);
     }
@@ -107,6 +113,11 @@ module.exports.deleteNews = async (req, res) => {
     const accessToken = req.headers['authorization'];
     const result = await jwt.verify(accessToken, secret);
     if (result) {
+      const foundedUser = await User.findOne({ _id: result.payload });
+      if (!foundedUser.permission.news.D) {
+        throw new Error(`Нет прав на удаление новостей!`);
+      }
+
       const foundedNews = await News.deleteOne({ _id: req.params.id });
       if (!foundedNews) {
         throw new Error(`Такая новость не существует!`);
@@ -114,13 +125,12 @@ module.exports.deleteNews = async (req, res) => {
 
       const foundedAllNews = await News.find();
       if (!foundedAllNews) {
-        throw new Error(`Новости не найдены!`);
+        res.json([]);
       }
 
-      const preparedAllNews = [];
-      foundedAllNews.map((news) =>
-        preparedAllNews.push(serialize.serializeNews(news))
-      );
+      const preparedAllNews = foundedAllNews.map((news) => {
+        return serialize.serializeNews(news);
+      });
 
       res.json(preparedAllNews);
     }
