@@ -2,23 +2,27 @@ import { createAction, handleActions } from 'redux-actions';
 import { combineReducers } from 'redux';
 import request from '../../helpers/request';
 import { openNotification } from '../notifications';
-export const userProfileSelector = state => state.auth.userProfile;
-export const userPermissionsSelector = state => state.auth.permissions;
-export const tokensSelector = state => state.auth.tokens;
-export const isAuthorizedSelector = state => !!state.auth.tokens.accessToken;
-export const isLoadingUserProfileSelector = state => state.auth.isLoadingUserProfile;
+export const userProfileSelector = (state) => state.auth.userProfile;
+export const userPermissionsSelector = (state) => state.auth.permissions;
+export const tokensSelector = (state) => state.auth.tokens;
+export const isAuthorizedSelector = (state) => !!state.auth.tokens.accessToken;
+export const isLoadingUserProfileSelector = (state) => state.auth.isLoadingUserProfile;
 
 const actionsPrefix = 'AUTH';
 export const loginUserRequest = createAction(`${actionsPrefix}/LOGIN_USER_REQUEST`);
-export const registrationUserRequest = createAction(`${actionsPrefix}/REGISTRATION_USER_REQUEST`);
+export const registrationUserRequest = createAction(
+  `${actionsPrefix}/REGISTRATION_USER_REQUEST`
+);
 export const setProfileData = createAction(`${actionsPrefix}/SET_PROFILE_DATA`);
 export const setTokenData = createAction(`${actionsPrefix}/SET_TOKEN_DATA`);
 export const logoutUser = createAction(`${actionsPrefix}/LOGOUT_USER`);
-export const setIsLoadingUserProfile = createAction(`${actionsPrefix}/SET_IS_LOADING_USER_PROFILE`);
+export const setIsLoadingUserProfile = createAction(
+  `${actionsPrefix}/SET_IS_LOADING_USER_PROFILE`
+);
 
 const isLoadingUserProfile = handleActions(
   {
-    [setIsLoadingUserProfile]: (_, action) => action.payload
+    [setIsLoadingUserProfile]: (_, action) => action.payload,
   },
   false
 );
@@ -29,14 +33,14 @@ const userProfile = handleActions(
       const { id, image, middleName, surName, username, firstName } = action.payload;
       return { id, image, firstName, middleName, surName, username };
     },
-    [logoutUser]: () => null
+    [logoutUser]: () => null,
   },
   null
 );
 const defaultPermissions = {
   chat: { C: false, D: false, R: false, U: false },
   news: { C: false, D: false, R: false, U: false },
-  settings: { C: false, D: false, R: false, U: false }
+  settings: { C: false, D: false, R: false, U: false },
 };
 const permissions = handleActions(
   {
@@ -44,7 +48,7 @@ const permissions = handleActions(
       const { permission } = action.payload;
       return permission;
     },
-    [logoutUser]: () => defaultPermissions
+    [logoutUser]: () => defaultPermissions,
   },
   defaultPermissions
 );
@@ -56,27 +60,27 @@ const tokens = handleActions(
         accessToken,
         accessTokenExpiredAt,
         refreshToken,
-        refreshTokenExpiredAt
+        refreshTokenExpiredAt,
       } = action.payload;
       return {
         accessToken,
         accessTokenExpiredAt,
         refreshToken,
-        refreshTokenExpiredAt
+        refreshTokenExpiredAt,
       };
     },
     [logoutUser]: () => ({
       accessToken: null,
       accessTokenExpiredAt: null,
       refreshToken: null,
-      refreshTokenExpiredAt: null
-    })
+      refreshTokenExpiredAt: null,
+    }),
   },
   {
     accessToken: null,
     accessTokenExpiredAt: null,
     refreshToken: null,
-    refreshTokenExpiredAt: null
+    refreshTokenExpiredAt: null,
   }
 );
 
@@ -84,14 +88,14 @@ export default combineReducers({
   userProfile,
   permissions,
   tokens,
-  isLoadingUserProfile
+  isLoadingUserProfile,
 });
 
 export const loginUser = ({ username, password }) => (dispatch, getState) =>
   new Promise((resolve, reject) => {
     const data = {
       username,
-      password
+      password,
     };
     request({
       url: '/login',
@@ -99,46 +103,54 @@ export const loginUser = ({ username, password }) => (dispatch, getState) =>
       data,
       isWithoutToken: true,
       dispatch,
-      getState
+      getState,
     })
-      .then(data => {
+      .then((data) => {
         dispatch(openNotification({ text: 'Вы успешно вошли!', variant: 'success' }));
-        const { accessToken, accessTokenExpiredAt, refreshToken, refreshTokenExpiredAt } = data;
+        const {
+          accessToken,
+          accessTokenExpiredAt,
+          refreshToken,
+          refreshTokenExpiredAt,
+        } = data;
         localStorage.setItem(
           'token-data',
           JSON.stringify({
             accessToken,
             accessTokenExpiredAt,
             refreshToken,
-            refreshTokenExpiredAt
+            refreshTokenExpiredAt,
           })
         );
         dispatch(setProfileData(data));
         dispatch(setTokenData(data));
         resolve(data);
       })
-      .catch(error => {
+      .catch((error) => {
         dispatch(
           openNotification({
             text: error.message,
-            variant: 'error'
+            variant: 'error',
           })
         );
         reject(error);
       });
   });
 
-export const registerUser = ({ username, password, firstname, lastname, patronicname }) => (
-  dispatch,
-  getState
-) =>
+export const registerUser = ({
+  username,
+  password,
+  firstname,
+  lastname,
+  patronicname,
+}) => (dispatch, getState) =>
   new Promise((resolve, reject) => {
     const data = {
       username,
       surName: lastname,
       firstName: firstname,
       middleName: patronicname,
-      password
+      password,
     };
     request({
       url: '/registration',
@@ -146,22 +158,22 @@ export const registerUser = ({ username, password, firstname, lastname, patronic
       method: 'POST',
       isWithoutToken: true,
       dispatch,
-      getState
+      getState,
     })
       .then(() => {
         dispatch(
           openNotification({
             text: 'Вы успешно зарегистрированы!',
-            variant: 'success'
+            variant: 'success',
           })
         );
         resolve(data);
       })
-      .catch(error => {
+      .catch((error) => {
         dispatch(
           openNotification({
             text: error.message,
-            variant: 'error'
+            variant: 'error',
           })
         );
         reject(error);
@@ -173,52 +185,83 @@ export const getUserProfileFromToken = () => (dispatch, getState) => {
   if (!tokenData) return;
   dispatch(setTokenData(JSON.parse(tokenData)));
   request({ url: '/profile', method: 'GET', dispatch, getState })
-    .then(data => {
+    .then((data) => {
       dispatch(setProfileData(data));
     })
-    .catch(error => {});
+    .catch((error) => {});
 };
 
 export const refreshTokenRequest = () => (dispatch, getState) =>
   new Promise((resolve, reject) => {
-    request({ url: '/refresh-token', method: 'POST', isRefresh: true, dispatch, getState })
-      .then(data => {
+    request({
+      url: '/refresh-token',
+      method: 'POST',
+      isRefresh: true,
+      dispatch,
+      getState,
+    })
+      .then((data) => {
+        const {
+          accessToken,
+          accessTokenExpiredAt,
+          refreshToken,
+          refreshTokenExpiredAt,
+        } = data;
+        localStorage.setItem(
+          'token-data',
+          JSON.stringify({
+            accessToken,
+            accessTokenExpiredAt,
+            refreshToken,
+            refreshTokenExpiredAt,
+          })
+        );
         dispatch(setTokenData(data));
         resolve(resolve);
       })
-      .catch(error => reject(error));
+      .catch((error) => reject(error));
   });
 
-export const logout = () => dispatch => {
+export const logout = () => (dispatch) => {
   localStorage.removeItem('token-data');
   dispatch(logoutUser());
   openNotification({
     text: 'Вы вышли из системы',
-    variant: 'info'
+    variant: 'info',
   });
 };
 
-export const saveProfile = ({ firstName, surName, middleName, oldPassword, newPassword, avatar }) => (
-  dispatch,
-  getState
-) =>
-  new Promise(resolve => {
-    
-    const data = new FormData()
-    data.append('firstName', firstName)
-    data.append('surName', surName)
-    data.append('middleName', middleName)
-    data.append('oldPassword', oldPassword)
-    data.append('newPassword', newPassword)
+export const saveProfile = ({
+  firstName,
+  surName,
+  middleName,
+  oldPassword,
+  newPassword,
+  avatar,
+}) => (dispatch, getState) =>
+  new Promise((resolve) => {
+    const data = new FormData();
+    data.append('firstName', firstName);
+    data.append('surName', surName);
+    data.append('middleName', middleName);
+    data.append('oldPassword', oldPassword);
+    data.append('newPassword', newPassword);
     data.append('avatar', avatar);
 
     dispatch(setIsLoadingUserProfile(true));
     request({ url: '/profile', method: 'PATCH', data, getState, dispatch })
-      .then(data => {
+      .then((data) => {
         dispatch(setProfileData(data));
-        dispatch(openNotification({ text: 'Профиль успешно обновлен!', variant: 'success' }));
+        dispatch(
+          openNotification({
+            text: 'Профиль успешно обновлен!',
+            variant: 'success',
+          })
+        );
         resolve(true);
       })
-      .catch(error => dispatch(openNotification({ text: error.message, variant: 'error' })))
+      .catch((error) =>
+        dispatch(openNotification({ text: error.message, variant: 'error' }))
+      )
       .finally(() => dispatch(setIsLoadingUserProfile(false)));
   });
