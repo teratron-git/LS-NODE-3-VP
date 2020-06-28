@@ -106,16 +106,14 @@ module.exports.refreshTokens = async (req, res) => {
 
 module.exports.getProfile = async (req, res) => {
   try {
-    const accessToken = req.headers['authorization'];
-    const result = await jwt.verify(accessToken, secret);
-    if (result) {
-      const foundedUser = await User.findOne({ _id: result.payload });
-      if (!foundedUser) {
-        throw new Error(`Пользователь не найден!`);
-      }
-
-      res.json(serialize.serializeUser(foundedUser));
+    const foundedUser = await User.findOne({
+      _id: req.accessTokenData.payload,
+    });
+    if (!foundedUser) {
+      throw new Error(`Пользователь не найден!`);
     }
+
+    res.json(serialize.serializeUser(foundedUser));
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -123,49 +121,47 @@ module.exports.getProfile = async (req, res) => {
 
 module.exports.changeProfile = async (req, res) => {
   try {
-    const accessToken = req.headers['authorization'];
-    const result = await jwt.verify(accessToken, secret);
-    if (result) {
-      const foundedUser = await User.findOne({ _id: result.payload });
+    const foundedUser = await User.findOne({
+      _id: req.accessTokenData.payload,
+    });
+    if (!foundedUser) {
+      throw new Error(`Пользователь не найден!`);
+    }
+
+    const avatar = req.file
+      ? path.join('/uploads', req.file.filename)
+      : foundedUser.image;
+
+    let passIsNotReceived = false;
+    let isValidPass = false;
+    let password = foundedUser.password;
+
+    if (req.body.oldPassword && req.body.newPassword) {
+      const newHash = bcrypt.hashSync(req.body.newPassword, 10);
+      isValidPass = await bcrypt.compareSync(
+        req.body.oldPassword,
+        foundedUser.password
+      );
+      password = isValidPass ? newHash : foundedUser.password;
+    } else if (!req.body.oldPassword && !req.body.newPassword) {
+      passIsNotReceived = true;
+    } else {
+      throw new Error(`Нужно заполнить поля со старым и новым паролем!`);
+    }
+
+    if (isValidPass || passIsNotReceived) {
+      const foundedUser = await User.findOneAndUpdate(
+        { _id: req.accessTokenData.payload },
+        { ...req.body, password: password, image: avatar },
+        { new: true }
+      );
       if (!foundedUser) {
-        throw new Error(`Пользователь не найден!`);
+        throw new Error(`Ошибка обновления данных!`);
       }
 
-      const avatar = req.file
-        ? path.join('/uploads', req.file.filename)
-        : foundedUser.image;
-
-      let passIsNotReceived = false;
-      let isValidPass = false;
-      let password = foundedUser.password;
-
-      if (req.body.oldPassword.length && req.body.newPassword.length) {
-        const newHash = bcrypt.hashSync(req.body.newPassword, 10);
-        isValidPass = await bcrypt.compareSync(
-          req.body.oldPassword,
-          foundedUser.password
-        );
-        password = isValidPass ? newHash : foundedUser.password;
-      } else if (!req.body.oldPassword.length && !req.body.newPassword.length) {
-        passIsNotReceived = true;
-      } else {
-        throw new Error(`Нужно заполнить поля со старым и новым паролем!`);
-      }
-
-      if (isValidPass || passIsNotReceived) {
-        const foundedUser = await User.findOneAndUpdate(
-          { _id: result.payload },
-          { ...req.body, password: password, image: avatar },
-          { new: true }
-        );
-        if (!foundedUser) {
-          throw new Error(`Ошибка обновления данных!`);
-        }
-
-        res.json(serialize.serializeUser(foundedUser));
-      } else {
-        throw new Error(`Старый пароль неверен!`);
-      }
+      res.json(serialize.serializeUser(foundedUser));
+    } else {
+      throw new Error(`Старый пароль неверен!`);
     }
   } catch (err) {
     if (req.file) {
@@ -182,21 +178,17 @@ module.exports.changeProfile = async (req, res) => {
 
 module.exports.getAllUsers = async (req, res) => {
   try {
-    const accessToken = req.headers['authorization'];
-    const result = await jwt.verify(accessToken, secret);
-    if (result) {
-      const foundedUsers = await User.find();
-      if (!foundedUsers) {
-        throw new Error(`Пользователь не найден!`);
-      }
-
-      const preparedUsers = [];
-      foundedUsers.map((user) =>
-        preparedUsers.push(serialize.serializeUser(user))
-      );
-
-      res.json(preparedUsers);
+    const foundedUsers = await User.find();
+    if (!foundedUsers) {
+      throw new Error(`Пользователь не найден!`);
     }
+
+    const preparedUsers = [];
+    foundedUsers.map((user) =>
+      preparedUsers.push(serialize.serializeUser(user))
+    );
+
+    res.json(preparedUsers);
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -204,20 +196,16 @@ module.exports.getAllUsers = async (req, res) => {
 
 module.exports.changeUserPermission = async (req, res) => {
   try {
-    const accessToken = req.headers['authorization'];
-    const result = await jwt.verify(accessToken, secret);
-    if (result) {
-      const foundedUser = await User.findOneAndUpdate(
-        { _id: req.params.id },
-        { ...req.body },
-        { new: true }
-      );
-      if (!foundedUser) {
-        throw new Error(`Пользователь не найден!`);
-      }
-
-      res.json(foundedUser.permission);
+    const foundedUser = await User.findOneAndUpdate(
+      { _id: req.params.id },
+      { ...req.body },
+      { new: true }
+    );
+    if (!foundedUser) {
+      throw new Error(`Пользователь не найден!`);
     }
+
+    res.json(foundedUser.permission);
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -225,16 +213,12 @@ module.exports.changeUserPermission = async (req, res) => {
 
 module.exports.deleteUser = async (req, res) => {
   try {
-    const accessToken = req.headers['authorization'];
-    const result = await jwt.verify(accessToken, secret);
-    if (result) {
-      const foundedUser = await User.deleteOne({ _id: req.params.id });
-      if (!foundedUser) {
-        throw new Error(`Пользователь не найден!`);
-      }
-
-      res.json({ message: `Пользователь ${foundedUser.username} удалён!` });
+    const foundedUser = await User.deleteOne({ _id: req.params.id });
+    if (!foundedUser) {
+      throw new Error(`Пользователь не найден!`);
     }
+
+    res.json({ message: `Пользователь ${foundedUser.username} удалён!` });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
