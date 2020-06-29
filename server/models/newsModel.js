@@ -28,4 +28,20 @@ const NewsSchema = new mongoose.Schema({
   },
 });
 
-mongoose.model('News', NewsSchema);
+const News = mongoose.model('News', NewsSchema);
+
+module.exports.getAllNews = async () => {
+  return await News.find();
+};
+
+module.exports.createNews = async (data) => {
+  return await News.create(data);
+};
+
+module.exports.updateNews = async (_id, data, isUpdatedDataReturn) => {
+  return await News.findOneAndUpdate({ _id }, data, { new: isUpdatedDataReturn });
+};
+
+module.exports.deleteNews = async (_id) => {
+  return await News.deleteOne({ _id });
+};
