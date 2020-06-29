@@ -1,22 +1,16 @@
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
 const newsModel = require('../models/newsModel');
-const { secret } = require('../../config/serverConfig').jwt;
+const userModel = require('../models/userModel');
 const serialize = require('../utils/serialize');
-
-const User = mongoose.model('User');
-const News = mongoose.model('News');
 
 module.exports.getAllNews = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser.permission.news.R) {
       throw new Error(`Нет прав на чтение новостей!`);
     }
 
-    const foundedAllNews = await News.find();
+    const foundedAllNews = await newsModel.getAllNews();
     if (!foundedAllNews) {
       res.json([]);
     }
@@ -32,9 +26,7 @@ module.exports.getAllNews = async (req, res) => {
 
 module.exports.createNews = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser.permission.news.C) {
       throw new Error(`Нет прав на создание новостей!`);
     }
@@ -52,9 +44,9 @@ module.exports.createNews = async (req, res) => {
         username: foundedUser.username,
       },
     };
+    await newsModel.createNews(preparedForCreate);
 
-    const createdNews = await News.create(preparedForCreate);
-    const foundedAllNews = await News.find();
+    const foundedAllNews = await newsModel.getAllNews();
     if (!foundedAllNews) {
       res.json([]);
     }
@@ -71,23 +63,17 @@ module.exports.createNews = async (req, res) => {
 
 module.exports.changeNews = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser.permission.news.U) {
       throw new Error(`Нет прав на обновление новостей!`);
     }
 
-    const foundedNews = await News.findOneAndUpdate(
-      { _id: req.params.id },
-      { ...req.body },
-      { new: true }
-    );
+    const foundedNews = await newsModel.updateNews(req.params.id, req.body, true);
     if (!foundedNews) {
       throw new Error(`Ошибка при обновлении новости!`);
     }
 
-    const foundedAllNews = await News.find();
+    const foundedAllNews = await newsModel.getAllNews();
     if (!foundedAllNews) {
       res.json([]);
     }
@@ -104,19 +90,17 @@ module.exports.changeNews = async (req, res) => {
 
 module.exports.deleteNews = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser.permission.news.D) {
       throw new Error(`Нет прав на удаление новостей!`);
     }
 
-    const foundedNews = await News.deleteOne({ _id: req.params.id });
+    const foundedNews = await newsModel.deleteNews(req.params.id);
     if (!foundedNews) {
       throw new Error(`Такая новость не существует!`);
     }
 
-    const foundedAllNews = await News.find();
+    const foundedAllNews = await newsModel.getAllNews();
     if (!foundedAllNews) {
       res.json([]);
     }
