@@ -1,4 +1,3 @@
-const fs = require('fs');
 const jimp = require('jimp');
 const path = require('path');
 
