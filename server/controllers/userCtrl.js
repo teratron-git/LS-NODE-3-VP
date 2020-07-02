@@ -16,22 +16,12 @@ module.exports.registration = async (req, res) => {
       throw new Error(`Пользователь ${username} уже зарегистрирован!`);
     }
 
-    const otherData = {
-      _id: mongoose.Types.ObjectId(),
-      image:
-        'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
-      permission: {
-        chat: { C: true, R: true, U: true, D: true },
-        news: { C: true, R: true, U: true, D: true },
-        settings: { C: true, R: true, U: true, D: true },
-      },
-    };
-
+    const restData = userModel.getRestData();
     const hash = bcrypt.hashSync(req.body.password, 10);
-    const tokens = await authHelper.createTokens(otherData._id);
+    const tokens = await authHelper.createTokens(restData._id);
     const preparedForCreate = {
       ...req.body,
-      ...otherData,
+      ...restData,
       password: hash,
       refreshToken: tokens.refreshToken,
       refreshTokenExpiredAt: tokens.refreshTokenExpiredAt,

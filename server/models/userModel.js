@@ -20,6 +20,19 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
+module.exports.getRestData = () => {
+  return {
+    _id: mongoose.Types.ObjectId(),
+    image:
+      'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
+    permission: {
+      chat: { C: true, R: true, U: true, D: true },
+      news: { C: true, R: true, U: true, D: true },
+      settings: { C: true, R: true, U: true, D: true },
+    },
+  };
+};
+
 module.exports.createUser = async (data) => {
   return await User.create(data);
 };
