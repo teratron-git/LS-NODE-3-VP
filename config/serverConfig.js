@@ -1,3 +1,5 @@
+// Top secret config file :)
+// It visible for demo purposes only.
 module.exports = {
   port: 3000,
   dbUrlProd: 'mongodb+srv://admin:admin@ls-node-3-vp-uu18v.gcp.mongodb.net/LS-NODE-3-VP',
