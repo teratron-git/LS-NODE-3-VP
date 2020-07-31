@@ -7,19 +7,13 @@ module.exports = async (req, res, next) => {
     if (!accessToken) {
       throw new Error(`Токен не предоставлен!`);
     }
-
-    const result = await jwt.verify(accessToken, secret);
-    if (!result) {
-      throw new Error(`Неверный токен!`);
-    }
-
-    req.accessTokenData = result;
+    req.accessTokenData = await jwt.verify(accessToken, secret);
     next();
   } catch (err) {
-    if (err instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ message: 'Неверный токен!' });
-    } else {
-      res.status(401).json({ message: err.message });
-    }
+    err.message =
+      err instanceof jwt.JsonWebTokenError ? 'Неправильный токен!' : err.message;
+    err.message =
+      err instanceof jwt.TokenExpiredError ? 'Время жизни токена истекло!' : err.message;
+    res.status(401).json({ message: err.message });
   }
 };

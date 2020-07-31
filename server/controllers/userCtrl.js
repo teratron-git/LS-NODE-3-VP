@@ -8,38 +8,26 @@ const userModel = require('../models/userModel');
 const path = require('path');
 const fs = require('fs');
 
-const User = mongoose.model('User');
-
 module.exports.registration = async (req, res) => {
   try {
     const { username } = req.body;
-    const foundedUser = await User.findOne({ username });
+    const foundedUser = await userModel.getUserByUsername(username);
     if (foundedUser) {
       throw new Error(`Пользователь ${username} уже зарегистрирован!`);
     }
 
-    const otherData = {
-      _id: mongoose.Types.ObjectId(),
-      image:
-        'https://icons-for-free.com/iconfiles/png/512/profile+user+icon-1320166082804563970.png',
-      permission: {
-        chat: { C: true, R: true, U: true, D: true },
-        news: { C: true, R: true, U: true, D: true },
-        settings: { C: true, R: true, U: true, D: true },
-      },
-    };
-
+    const restData = userModel.getRestData();
     const hash = bcrypt.hashSync(req.body.password, 10);
-    const tokens = await authHelper.createTokens(otherData._id);
+    const tokens = await authHelper.createTokens(restData._id);
     const preparedForCreate = {
       ...req.body,
-      ...otherData,
+      ...restData,
       password: hash,
       refreshToken: tokens.refreshToken,
       refreshTokenExpiredAt: tokens.refreshTokenExpiredAt,
     };
 
-    const createdUser = await User.create(preparedForCreate);
+    const createdUser = await userModel.createUser(preparedForCreate);
     res.json({
       ...serialize.serializeAuthUser(createdUser),
       accessToken: tokens.accessToken,
@@ -53,7 +41,7 @@ module.exports.registration = async (req, res) => {
 module.exports.logIn = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const foundedUser = await User.findOne({ username });
+    const foundedUser = await userModel.getUserByUsername(username);
     if (!foundedUser) {
       throw new Error(`Пользователь ${username} не зарегистрирован!`);
     }
@@ -61,14 +49,15 @@ module.exports.logIn = async (req, res) => {
     const isValidPass = bcrypt.compareSync(password, foundedUser.password);
     if (isValidPass) {
       const tokens = await authHelper.createTokens(foundedUser._id);
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: foundedUser._id },
+      const updatedUser = await userModel.updateUser(
+        foundedUser._id,
         {
           refreshToken: tokens.refreshToken,
           refreshTokenExpiredAt: tokens.refreshTokenExpiredAt,
         },
-        { new: true }
+        true
       );
+
       res.json({
         ...serialize.serializeAuthUser(updatedUser),
         accessToken: tokens.accessToken,
@@ -85,20 +74,19 @@ module.exports.logIn = async (req, res) => {
 module.exports.refreshTokens = async (req, res) => {
   try {
     const refreshToken = req.headers['authorization'];
-    const foundedUser = await User.findOne({ refreshToken });
-    if (!foundedUser) {
-      throw new Error(`Неправильный refresh токен!`);
+    const result = await jwt.verify(refreshToken, secret);
+    if (result) {
+      const foundedUser = await userModel.getUserById(result.payload);
+      if (!foundedUser) {
+        throw new Error(`Неправильный refresh токен!`);
+      }
+
+      const tokens = await authHelper.createTokens(result.payload);
+      await userModel.updateUser(result.payload, tokens, true);
+
+      res.setHeader('authorization', tokens.refreshToken);
+      res.json(tokens);
     }
-
-    const tokens = await authHelper.createTokens(foundedUser._id);
-    await User.findOneAndUpdate(
-      { username: foundedUser.username },
-      { ...tokens },
-      { new: true }
-    );
-
-    res.setHeader('authorization', tokens.refreshToken);
-    res.json(tokens);
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -106,9 +94,7 @@ module.exports.refreshTokens = async (req, res) => {
 
 module.exports.getProfile = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser) {
       throw new Error(`Пользователь не найден!`);
     }
@@ -121,9 +107,7 @@ module.exports.getProfile = async (req, res) => {
 
 module.exports.changeProfile = async (req, res) => {
   try {
-    const foundedUser = await User.findOne({
-      _id: req.accessTokenData.payload,
-    });
+    const foundedUser = await userModel.getUserById(req.accessTokenData.payload);
     if (!foundedUser) {
       throw new Error(`Пользователь не найден!`);
     }
@@ -138,10 +122,7 @@ module.exports.changeProfile = async (req, res) => {
 
     if (req.body.oldPassword && req.body.newPassword) {
       const newHash = bcrypt.hashSync(req.body.newPassword, 10);
-      isValidPass = await bcrypt.compareSync(
-        req.body.oldPassword,
-        foundedUser.password
-      );
+      isValidPass = await bcrypt.compareSync(req.body.oldPassword, foundedUser.password);
       password = isValidPass ? newHash : foundedUser.password;
     } else if (!req.body.oldPassword && !req.body.newPassword) {
       passIsNotReceived = true;
@@ -150,10 +131,10 @@ module.exports.changeProfile = async (req, res) => {
     }
 
     if (isValidPass || passIsNotReceived) {
-      const foundedUser = await User.findOneAndUpdate(
-        { _id: req.accessTokenData.payload },
+      const foundedUser = await userModel.updateUser(
+        req.accessTokenData.payload,
         { ...req.body, password: password, image: avatar },
-        { new: true }
+        true
       );
       if (!foundedUser) {
         throw new Error(`Ошибка обновления данных!`);
@@ -178,15 +159,13 @@ module.exports.changeProfile = async (req, res) => {
 
 module.exports.getAllUsers = async (req, res) => {
   try {
-    const foundedUsers = await User.find();
+    const foundedUsers = await userModel.getAllUsers();
     if (!foundedUsers) {
       throw new Error(`Пользователь не найден!`);
     }
 
     const preparedUsers = [];
-    foundedUsers.map((user) =>
-      preparedUsers.push(serialize.serializeUser(user))
-    );
+    foundedUsers.map((user) => preparedUsers.push(serialize.serializeUser(user)));
 
     res.json(preparedUsers);
   } catch (err) {
@@ -196,11 +175,7 @@ module.exports.getAllUsers = async (req, res) => {
 
 module.exports.changeUserPermission = async (req, res) => {
   try {
-    const foundedUser = await User.findOneAndUpdate(
-      { _id: req.params.id },
-      { ...req.body },
-      { new: true }
-    );
+    const foundedUser = await userModel.updateUser(req.params.id, req.body, true);
     if (!foundedUser) {
       throw new Error(`Пользователь не найден!`);
     }
@@ -213,12 +188,12 @@ module.exports.changeUserPermission = async (req, res) => {
 
 module.exports.deleteUser = async (req, res) => {
   try {
-    const foundedUser = await User.deleteOne({ _id: req.params.id });
+    const foundedUser = await userModel.deleteUser(req.params.id);
     if (!foundedUser) {
       throw new Error(`Пользователь не найден!`);
     }
 
-    res.json({ message: `Пользователь ${foundedUser.username} удалён!` });
+    res.json({ message: `Пользователь удалён!` });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }

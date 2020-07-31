@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 const http = require('http');
-// require('./models/userModel');
-const fs = require('fs');
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
