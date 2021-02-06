@@ -5,11 +5,14 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const routes = require('./routes');
 const app = express();
+const cors = require('cors');
 const config = require('../config/serverConfig');
 const server = http.createServer(app);
 const io = require('socket.io').listen(server);
 const chat = require('./controllers/chatCtrl');
 let dbUrl = '';
+
+app.use(cors());
 
 if (process.env.NODE_ENV === 'production') {
   dbUrl = process.env.DB_URL_DEV || config.dbUrlDev;
@@ -47,7 +50,7 @@ app.use((req, res, next) => {
   err.status = 404;
   next(err);
 });
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   res.status(err.status || 500);
   res.render('error', { message: err.message });
 });
